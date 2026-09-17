@@ -8,9 +8,11 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,7 +39,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// كل فئة ومعاها قائمة الحالات
+// بيانات الحالات ماشية زي ما هي
 val categories: Map<String, List<String>> = mapOf(
     "عامة" to listOf(
         "الدنيا علمتني إني ماشتكيش، وإن شكيت أشكي لربنا بس.",
@@ -112,129 +114,203 @@ fun HomeScreen() {
     val currentList = categories[categoryNames[selectedCategory]] ?: emptyList()
     val currentStatus = currentList[statusIndex.coerceIn(0, currentList.lastIndex)]
 
-    Column(
+    // خلفية متدرجة
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF6A11CB), Color(0xFF2575FC))
+                Brush.linearGradient(
+                    listOf(
+                        Color(0xFF0F2027),
+                        Color(0xFF203A43),
+                        Color(0xFF2C5364),
+                        Color(0xFF6A3093),
+                        Color(0xFFA044FF)
+                    )
                 )
             )
-            .padding(20.dp)
+            .padding(16.dp)
     ) {
-        Text(
-            text = "حالات وكلام",
-            color = Color.White,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
-        )
-
-        // تابات الفئات
-        ScrollableTabRow(
-            selectedTabIndex = selectedCategory,
-            containerColor = Color.Transparent,
-            edgePadding = 0.dp,
-            divider = {}
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            categoryNames.forEachIndexed { i, name ->
-                Tab(
-                    selected = i == selectedCategory,
-                    onClick = {
-                        selectedCategory = i
-                        statusIndex = 0
-                    },
-                    text = {
+            // العنوان
+            Text(
+                text = "✨ حالات وكلام",
+                color = Color.White,
+                fontSize = 30.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+            )
+
+            Text(
+                text = "اختار فئتك وشاركها مع أصحابك",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // تابات بشكل حبوب
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(categoryNames.indices.toList()) { i ->
+                    val selected = i == selectedCategory
+                    Surface(
+                        shape = CircleShape,
+                        color = if (selected) Color.White
+                                else Color.White.copy(alpha = 0.15f),
+                        border = BorderStroke(
+                            1.dp,
+                            if (selected) Color.White.copy(alpha = 0.5f)
+                            else Color.White.copy(alpha = 0.2f)
+                        )
+                    ) {
                         Text(
-                            text = name,
-                            color = if (i == selectedCategory) Color.White
-                                    else Color.White.copy(alpha = 0.6f),
-                            fontWeight = if (i == selectedCategory) FontWeight.Bold
-                                         else FontWeight.Normal
+                            text = categoryNames[i],
+                            color = if (selected) Color(0xFF203A43)
+                                    else Color.White,
+                            fontWeight = if (selected) FontWeight.Bold
+                                         else FontWeight.Normal,
+                            modifier = Modifier.padding(
+                                horizontal = 18.dp,
+                                vertical = 8.dp
+                            )
                         )
                     }
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // كارت الحالة
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.15f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(24.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = currentStatus,
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    lineHeight = 34.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-        }
-
-        Spacer(Modifier.height(16.dp))
-
-        // صف أزرار: حالة جديدة + نسخ
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Button(
-                onClick = { statusIndex = (statusIndex + 1) % currentList.size },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text("حالة جديدة")
-            }
-
-            OutlinedButton(
-                onClick = {
-                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("status", currentStatus))
-                    Toast.makeText(context, "اتنسخت ✅", Toast.LENGTH_SHORT).show()
-                },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.7f))
-            ) {
-                Text("نسخ")
-            }
-        }
-
-        Spacer(Modifier.height(10.dp))
-
-        // زر المشاركة
-        Button(
-            onClick = {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, currentStatus)
                 }
-                context.startActivity(Intent.createChooser(intent, "شارك الحالة"))
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(14.dp)
-        ) {
-            Text("شارك الحالة 🌟", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // كارت الحالة الرئيسي
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.1f)
+                ),
+                border = BorderStroke(
+                    1.dp,
+                    Color.White.copy(alpha = 0.25f)
+                )
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(28.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // علامة اقتباس
+                        Text(
+                            text = "❝",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        Text(
+                            text = currentStatus,
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            lineHeight = 38.sp,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        Spacer(Modifier.height(16.dp))
+
+                        Text(
+                            text = "· ${categoryNames[selectedCategory]} ·",
+                            color = Color.White.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // أزرار أسفل
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // زر حالة جديدة
+                Button(
+                    onClick = { statusIndex = (statusIndex + 1) % currentList.size },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White
+                    )
+                ) {
+                    Text(
+                        text = "🔄 حالة جديدة",
+                        color = Color(0xFF203A43),
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // نسخ
+                OutlinedButton(
+                    onClick = {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        clipboard.setPrimaryClip(ClipData.newPlainText("status", currentStatus))
+                        Toast.makeText(context, "اتنسخت ✅", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(
+                        1.dp,
+                        Color.White.copy(alpha = 0.6f)
+                    ),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White
+                    )
+                ) {
+                    Text("📋 نسخ", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                }
+
+                // مشاركة
+                Button(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, currentStatus)
+                        }
+                        context.startActivity(Intent.createChooser(intent, "شارك الحالة"))
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFA044FF)
+                    )
+                ) {
+                    Text("📤 مشاركة", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                }
+            }
         }
     }
 }
